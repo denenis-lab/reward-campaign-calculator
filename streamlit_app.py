@@ -25,16 +25,16 @@ interest_mode = st.sidebar.radio(
 
 st.sidebar.subheader("Сроки (дни)")
 col1, col2, col3 = st.sidebar.columns(3)
-period_1 = col1.number_input("С1", value=30, step=10, key="p1")
-period_2 = col2.number_input("С2", value=60, step=10, key="p2")
-period_3 = col3.number_input("С3", value=90, step=10, key="p3")
+period_1 = col1.number_input("30д", value=30, step=10, key="p1")
+period_2 = col2.number_input("60д", value=60, step=10, key="p2")
+period_3 = col3.number_input("90д", value=90, step=10, key="p3")
 periods = [period_1, period_2, period_3]
 
 st.sidebar.subheader("Cap на баланс (USD)")
 col1, col2, col3 = st.sidebar.columns(3)
-cap_1 = col1.number_input("К1", value=500, step=100, key="c1")
-cap_2 = col2.number_input("К2", value=1000, step=100, key="c2")
-cap_3 = col3.number_input("К3", value=2000, step=100, key="c3")
+cap_1 = col1.number_input("$500", value=500, step=100, key="c1")
+cap_2 = col2.number_input("$1k", value=1000, step=100, key="c2")
+cap_3 = col3.number_input("$2k", value=2000, step=100, key="c3")
 caps = [cap_1, cap_2, cap_3]
 
 # ── Заголовок ─────────────────────────────────────────────────────────────────
