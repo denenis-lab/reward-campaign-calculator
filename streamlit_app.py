@@ -190,41 +190,26 @@ c1, c2 = st.columns(2)
 c1.metric("Всего пользователей", f"{total_users:,.0f}")
 c2.metric("Общий баланс", f"${total_balance:,.0f}")
 
-# ── Матрица стоимости ─────────────────────────────────────────────────────────
+# ── Матрица: укладывается в бюджет? ──────────────────────────────────────────
 
 st.divider()
-st.subheader("Матрица стоимости")
-
-display_matrix = cost_matrix.copy()
-for col in cap_cols:
-    display_matrix[col] = cost_matrix[col].apply(
-        lambda v: f"${v:,.0f} ✓" if v <= budget else f"${v:,.0f} ✗"
-    )
-display_matrix["Срок (дни)"] = display_matrix["Срок (дни)"].astype(int)
-
-col_config = {col: st.column_config.TextColumn(label=col) for col in cap_cols}
-col_config["Срок (дни)"] = st.column_config.NumberColumn(format="%d")
-
-st.dataframe(display_matrix, width="stretch", hide_index=True, column_config=col_config)
-st.caption("✓ Укладывается в бюджет · ✗ Превышает бюджет")
-
-# ── Тепловая карта ────────────────────────────────────────────────────────────
-
-st.subheader("Тепловая карта стоимости")
+st.subheader("Какие комбинации укладываются в бюджет?")
 
 z_values = cost_matrix[cap_cols].values
 x_labels = [f"Cap ${c:,.0f}" for c in caps]
 y_labels = [f"{p} дней" for p in periods]
 
+# Binary colors: green = in budget, red = over
+color_values = [[1 if val <= budget else 0 for val in row] for row in z_values]
+
 annotations = []
 for i, row_vals in enumerate(z_values):
     for j, val in enumerate(row_vals):
         pct = val / budget * 100
-        symbol = "✓" if val <= budget else "✗"
         annotations.append(
             dict(
                 x=j, y=i,
-                text=f"<b>${val:,.0f}</b><br>{pct:.0f}% {symbol}",
+                text=f"<b>${val:,.0f}</b><br>{pct:.0f}% бюджета",
                 showarrow=False,
                 font=dict(size=16, color="white", family="Arial"),
             )
@@ -232,14 +217,10 @@ for i, row_vals in enumerate(z_values):
 
 fig_heatmap = go.Figure(
     data=go.Heatmap(
-        z=z_values,
-        colorscale=[
-            [0, "#1a472a"],
-            [0.5, "#f59e0b"],
-            [1, "#991b1b"],
-        ],
+        z=color_values,
+        colorscale=[[0, "#991b1b"], [1, "#166534"]],
         zmin=0,
-        zmax=budget * 1.8,
+        zmax=1,
         showscale=False,
     )
 )
@@ -251,6 +232,7 @@ fig_heatmap.update_layout(
     margin=dict(l=80, r=20, t=40, b=20),
 )
 st.plotly_chart(fig_heatmap, width="stretch")
+st.caption("🟢 В бюджете · 🔴 Превышает бюджет")
 
 # ── Анализ влияния cap'а ─────────────────────────────────────────────────────
 
