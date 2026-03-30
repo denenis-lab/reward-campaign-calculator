@@ -240,8 +240,6 @@ st.divider()
 st.subheader("Влияние cap'а на охват")
 st.caption("Сколько пользователей получают reward не на весь баланс, а только на часть (обрезанную cap'ом)?")
 
-cap_period = st.selectbox("Срок для расчёта упущенного reward", periods, index=1, format_func=lambda x: f"{x} дней", key="cap_period")
-
 cap_impact_rows = []
 for cap in caps:
     capped_users = edited_df.loc[edited_df["Ср. баланс ($)"] > cap, "Пользователи"].sum()
@@ -255,11 +253,6 @@ for cap in caps:
         "capped_pct": capped_pct,
         "uncapped_pct": uncapped_pct,
         "% обрезанных": capped_pct,
-        "Упущенный reward ($)": sum(
-            row["Пользователи"] * calc_reward(max(0, row["Ср. баланс ($)"] - cap), reward_rate, cap_period, interest_mode)
-            for _, row in edited_df.iterrows()
-            if row["Ср. баланс ($)"] > cap
-        ),
     })
 
 cap_impact_df = pd.DataFrame(cap_impact_rows)
@@ -299,11 +292,10 @@ with col_left:
 
 with col_right:
     st.dataframe(
-        cap_impact_df[["Cap", "Обрезаны", "Полный reward", "% обрезанных", "Упущенный reward ($)"]].style.format({
+        cap_impact_df[["Cap", "Обрезаны", "Полный reward", "% обрезанных"]].style.format({
             "Обрезаны": "{:,.0f}",
             "Полный reward": "{:,.0f}",
             "% обрезанных": "{:.1f}%",
-            "Упущенный reward ($)": "${:,.0f}",
         }),
         width="stretch",
         hide_index=True,
