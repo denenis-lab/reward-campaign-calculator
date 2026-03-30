@@ -76,7 +76,7 @@ def build_cost_matrix(users_df: pd.DataFrame, rate: float, periods: list, caps: 
 # ── Рекомендации — 3 сценария ────────────────────────────────────────────────
 
 def generate_scenarios(cost_matrix: pd.DataFrame, caps: list, periods: list, budget: float, users_df: pd.DataFrame, rate: float, mode: str):
-    """Find conservative, balanced, and aggressive scenarios from the cost matrix."""
+    """Three strategy-based scenarios: max coverage, max retention, beyond budget."""
     cap_cols = [c for c in cost_matrix.columns if c.startswith("Cap")]
 
     combos = []
@@ -100,40 +100,28 @@ def generate_scenarios(cost_matrix: pd.DataFrame, caps: list, periods: list, bud
 
     scenarios = []
 
-    # Conservative: cheapest in budget
+    # 1. Макс. охват — highest cap within budget (minimize capped users)
     if in_budget:
-        conservative = min(in_budget, key=lambda c: c["cost"])
-        conservative["label"] = "Консервативный"
-        conservative["desc"] = "Минимальная стоимость, комфортно в бюджете"
-        scenarios.append(conservative)
+        max_coverage = min(in_budget, key=lambda c: (c["capped_pct"], -c["days"]))
+        max_coverage["label"] = "Макс. охват"
+        max_coverage["desc"] = "Максимальный cap → меньше обрезанных юзеров"
+        scenarios.append(max_coverage)
 
-    # Balanced: best coverage within budget (max days × cap while in budget)
+    # 2. Макс. срок — longest period within budget (best retention)
     if in_budget:
-        balanced = max(in_budget, key=lambda c: (c["days"] * c["cap"], -c["capped_pct"]))
-        if not scenarios or (balanced["days"] != scenarios[0]["days"] or balanced["cap"] != scenarios[0]["cap"]):
-            balanced["label"] = "Сбалансированный ⭐"
-            balanced["desc"] = "Лучший охват в рамках бюджета"
-            scenarios.append(balanced)
-        else:
-            candidates = [c for c in in_budget if not (c["days"] == balanced["days"] and c["cap"] == balanced["cap"])]
-            if candidates:
-                alt = max(candidates, key=lambda c: (c["days"] * c["cap"], -c["capped_pct"]))
-                alt["label"] = "Сбалансированный ⭐"
-                alt["desc"] = "Лучший охват в рамках бюджета"
-                scenarios.append(alt)
+        max_retention = max(in_budget, key=lambda c: (c["days"], c["cap"]))
+        # Avoid duplicate
+        if not scenarios or (max_retention["days"] != scenarios[0]["days"] or max_retention["cap"] != scenarios[0]["cap"]):
+            max_retention["label"] = "Макс. retention"
+            max_retention["desc"] = "Максимальный срок → сильнее привычка хранить"
+            scenarios.append(max_retention)
 
-    # Aggressive: cheapest over budget, or most expensive in budget
+    # 3. За пределами бюджета — cheapest over-budget option (argument for stakeholders)
     if over_budget:
-        aggressive = min(over_budget, key=lambda c: c["cost"])
-        aggressive["label"] = "Агрессивный"
-        aggressive["desc"] = "Максимальный охват, превышает бюджет"
-        scenarios.append(aggressive)
-    elif in_budget:
-        aggressive = max(in_budget, key=lambda c: c["cost"])
-        if not any(s["days"] == aggressive["days"] and s["cap"] == aggressive["cap"] for s in scenarios):
-            aggressive["label"] = "Агрессивный"
-            aggressive["desc"] = "Максимальный охват в рамках бюджета"
-            scenarios.append(aggressive)
+        beyond = min(over_budget, key=lambda c: c["cost"])
+        beyond["label"] = "Если увеличить бюджет"
+        beyond["desc"] = "Что получим при расширении бюджета"
+        scenarios.append(beyond)
 
     return scenarios
 
